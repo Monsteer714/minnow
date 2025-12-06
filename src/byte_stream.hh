@@ -30,6 +30,7 @@ protected:
   uint64_t total_bytes_pushed = 0;
   uint64_t total_bytes_popped = 0;
   uint64_t current_buffered = 0;
+  uint64_t read_index = 0;
   bool error_ {};
   bool writer_closed = false;
 };

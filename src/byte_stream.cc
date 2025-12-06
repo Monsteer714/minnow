@@ -13,12 +13,12 @@ void Writer::push( string data )
        || available_capacity() == 0) {
     return;
   }
-  uint64_t i = 0;
-  while (i < data.size() && que.size() < capacity_) {
-    que.push_back(data[i++]);
-    current_buffered++;
-    total_bytes_pushed++;
+  auto push_len = std::min(available_capacity(), static_cast<uint64_t> (data.size()));
+  for (uint64_t i = 0; i < push_len; i++) {
+    que.push_back(data[i]);
   }
+  current_buffered += push_len;
+  total_bytes_pushed += push_len;
 }
 
 // Signal that the stream has reached its ending. Nothing more will be written.
@@ -51,19 +51,25 @@ uint64_t Writer::bytes_pushed() const
 // the caller to do a lot of extra work.
 string_view Reader::peek() const
 {
-  return {que.begin(), que.begin() + current_buffered};
+  return {que.begin() + read_index,
+           que.begin() + read_index + current_buffered};
 }
 
 // Remove `len` bytes from the buffer.
 void Reader::pop( uint64_t len )
 {
-  uint64_t const pop_len = std::min(len, static_cast<uint64_t>(que.size()));
-  for (uint64_t i = 0; i < que.size() - pop_len; i++) {
-    que[i] = que[i + pop_len];
-  }
-  que.resize(que.size() - pop_len);
+  auto pop_len = std::min(len, static_cast<uint64_t> (que.size()));
+  read_index += pop_len;
   current_buffered -= pop_len;
   total_bytes_popped += pop_len;
+
+  if (read_index * 2 >= que.size()) {
+    for (uint64_t i = 0; i < que.size() - read_index; i++) {
+      que[i] = que[i + read_index];
+    }
+    que.resize(que.size() - read_index);
+    read_index = 0;
+  }
 }
 
 // Is the stream finished (closed and fully popped)?
