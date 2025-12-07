@@ -11,10 +11,26 @@ using namespace std;
 namespace {
 void get_URL( const string& host, const string& path )
 {
-  debug( "Function called: get_URL( \"{}\", \"{}\" )", host, path );
-  debug( "get_URL() function not yet implemented" );
-}
+  TCPSocket clientSocket;
+  Address serverAddress( host, "http" );
+
+  // Connect to the server.
+  clientSocket.connect( serverAddress );
+
+  // Send the HTTP request.
+  string request = "GET " + path + " HTTP/1.1\r\nHost: " + host + "\r\n" + "Connection: close\r\n\r\n";
+  clientSocket.write( (string_view)request );
+
+  // Read and print the response
+  while ( !clientSocket.eof() ) {
+    string response;
+    clientSocket.read( response );
+    cout << response;
+  }
+
+  clientSocket.close();
 } // namespace
+}
 
 int main( int argc, char* argv[] )
 {
