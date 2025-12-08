@@ -1,6 +1,7 @@
 #pragma once
 
 #include "byte_stream.hh"
+#include <map>
 
 class Reassembler
 {
@@ -43,4 +44,21 @@ public:
 
 private:
   ByteStream output_;
+  // <first_index, data>
+  std::multimap<uint64_t, std::string> map = {};
+
+  uint64_t last_byte = -1;
+
+  Writer& getWriter() {
+    return output_.writer();
+  }
+
+  uint64_t availableCapacity() {
+    return getWriter().available_capacity();
+  }
+
+  uint64_t nextIndex() {
+    return getWriter().bytes_pushed();
+  }
+  void mergeStrings();
 };
