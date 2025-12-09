@@ -60,5 +60,6 @@ private:
   uint64_t nextIndex() {
     return getWriter().bytes_pushed();
   }
+
   void mergeStrings();
 };
