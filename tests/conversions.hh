@@ -1,10 +1,7 @@
 #pragma once
 
 #include "helpers.hh"
-
-#ifdef HAVE_WRAP32
 #include "wrapping_integers.hh"
-#endif
 
 #include <optional>
 #include <string>
@@ -15,7 +12,6 @@
 namespace minnow_conversions {
 using std::to_string;
 
-#ifdef HAVE_WRAP32
 class DebugWrap32 : public Wrap32
 {
 public:
@@ -26,7 +22,6 @@ inline std::string to_string( Wrap32 i )
 {
   return "Wrap32<" + std::to_string( DebugWrap32 { i }.debug_get_raw_value() ) + ">";
 }
-#endif
 
 template<typename T>
 std::string to_string( const std::optional<T>& v )
@@ -58,7 +53,6 @@ std::string to_string( T&& t )
   return minnow_conversions::to_string( std::forward<T>( t ) );
 }
 
-#ifdef HAVE_WRAP32
 inline std::ostream& operator<<( std::ostream& os, Wrap32 a )
 {
   return os << to_string( a );
@@ -68,4 +62,3 @@ inline bool operator!=( Wrap32 a, Wrap32 b )
 {
   return not( a == b );
 }
-#endif

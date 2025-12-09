@@ -72,7 +72,6 @@ string Printer::with_color( int color_value, string_view str ) const
   return ret;
 }
 
-#ifdef HAVE_TCP_SENDER_MESSAGE
 string to_string( const TCPSenderMessage& msg )
 {
   ostringstream o;
@@ -93,19 +92,16 @@ string to_string( const TCPSenderMessage& msg )
   o << ")";
   return o.str();
 }
-#endif
 
 Timeout::Timer::Timer()
 {
-  static constexpr itimerval deadline { .it_interval = { .tv_sec = 0, .tv_usec = 0 },
-                                        .it_value = { .tv_sec = 2, .tv_usec = 0 } };
+  static constexpr itimerval deadline { .it_interval = { 0, 0 }, .it_value = { 2, 0 } };
   CheckSystemCall( "setitimer", setitimer( ITIMER_PROF, &deadline, nullptr ) );
 }
 
 Timeout::Timer::~Timer()
 {
-  static constexpr itimerval disable { .it_interval = { .tv_sec = 0, .tv_usec = 0 },
-                                       .it_value = { .tv_sec = 0, .tv_usec = 0 } };
+  static constexpr itimerval disable { .it_interval = { 0, 0 }, .it_value = { 0, 0 } };
   try {
     CheckSystemCall( "setitimer", setitimer( ITIMER_PROF, &disable, nullptr ) );
   } catch ( const exception& e ) {
@@ -113,7 +109,6 @@ Timeout::Timer::~Timer()
   }
 }
 
-namespace {
 void throw_timeout( int signal_number )
 {
   if ( signal_number != SIGPROF ) {
@@ -122,11 +117,11 @@ void throw_timeout( int signal_number )
   // not really kosher in a signal handler, but it's fatal anyway
   throw TestException { "the individual test step took longer than 2 seconds (possibly an infinite loop?)" };
 }
-} // namespace
 
 Timeout::Timeout()
 {
-  struct sigaction action {};
+  struct sigaction action
+    {};
   action.sa_handler = throw_timeout;
   CheckSystemCall( "sigaction", sigaction( SIGPROF, &action, nullptr ) );
 }

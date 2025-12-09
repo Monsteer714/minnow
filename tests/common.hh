@@ -3,10 +3,7 @@
 #include "conversions.hh"
 #include "debug.hh"
 #include "exception.hh"
-
-#ifdef HAVE_TCP_SENDER_MESSAGE
 #include "tcp_sender_message.hh"
-#endif
 
 #include <iostream>
 #include <optional>
@@ -253,6 +250,4 @@ struct ExpectBool : public ExpectNumber<T, bool>
   using ExpectNumber<T, bool>::ExpectNumber;
 };
 
-#ifdef HAVE_TCP_SENDER_MESSAGE
 std::string to_string( const TCPSenderMessage& msg );
-#endif
