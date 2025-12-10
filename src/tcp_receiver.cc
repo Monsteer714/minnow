@@ -10,22 +10,17 @@ void TCPReceiver::receive( TCPSenderMessage message )
     return;
   }
   if (message.SYN) {
-    this->zero_point = message.seqno;
-    this->syn_flag = true;
-    this->fin_flag = false;
-    reassembler_.syn_flag = true;
-    reassembler_.fin_flag = false;
+    zero_point = message.seqno;
+    syn_flag = true;
   }
-  if (message.FIN) {
-    this->fin_flag = true;
+  else if (message.seqno == zero_point) {
+    return;
   }
   string data = message.payload;
-  uint64_t first_index = message.seqno.unwrap(this->zero_point, reassembler_.nextIndex())
-                         + message.SYN;
+  uint64_t checkpoint = writer().bytes_pushed() + syn_flag;
+  uint64_t first_index = message.seqno.unwrap(this->zero_point, checkpoint);
+  first_index = first_index == 0 ? first_index : first_index - 1;
   reassembler_.insert(first_index, data, message.FIN);
-  if (fin_flag && writer().is_closed()) {
-    reassembler_.fin_flag = true;
-  }
 }
 
 TCPReceiverMessage TCPReceiver::send() const
@@ -36,7 +31,8 @@ TCPReceiverMessage TCPReceiver::send() const
     return receive;
   }
   if (this->syn_flag) {
-    uint64_t left_edge = writer().bytes_pushed() + reassembler_.syn_flag + reassembler_.fin_flag;
+    uint64_t left_edge = writer().bytes_pushed()
+                         + syn_flag + writer().is_closed();
     receive.ackno = Wrap32::wrap(left_edge, zero_point);
   }
   receive.window_size = min((uint64_t) UINT16_MAX,
