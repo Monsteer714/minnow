@@ -43,11 +43,16 @@ public:
   const Writer& writer() const { return output_.writer(); }
 
 private:
+  friend class TCPReceiver;
+
   ByteStream output_;
   // <first_index, data>
   std::multimap<uint64_t, std::string> map = {};
 
-  uint64_t last_byte = -1;
+  uint64_t last_byte = UINT64_MAX;
+
+  bool syn_flag = false;
+  bool fin_flag = false;
 
   Writer& getWriter() {
     return output_.writer();
@@ -58,7 +63,7 @@ private:
   }
 
   uint64_t nextIndex() {
-    return getWriter().bytes_pushed();
+    return getWriter().bytes_pushed() + syn_flag + fin_flag;
   }
 
   void mergeStrings();
