@@ -34,7 +34,7 @@ int main()
       shuffle( seq_size.begin(), seq_size.end(), rd );
 
       string d( offset, 0 );
-      ranges::generate( d, [&] { return rd(); } );
+      generate( d.begin(), d.end(), [&] { return rd(); } );
 
       for ( auto [off, sz] : seq_size ) {
         sr.execute( Insert { d.substr( off, sz ), off }.is_last( off + sz == offset ) );

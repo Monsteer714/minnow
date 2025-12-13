@@ -1,6 +1,5 @@
 #include "parser.hh"
 
-#include <algorithm>
 #include <cassert>
 #include <string>
 
@@ -110,7 +109,7 @@ void Parser::string( span<char> out )
   auto next = out.begin();
   while ( next != out.end() ) {
     const auto view = input_.peek().substr( 0, out.end() - next );
-    next = ranges::copy( view, next ).out;
+    next = copy( view.begin(), view.end(), next );
     input_.remove_prefix( view.size() );
   }
 }

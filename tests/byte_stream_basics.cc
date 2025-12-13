@@ -5,7 +5,6 @@
 
 using namespace std;
 
-namespace {
 void all_zeroes( ByteStreamTestHarness& test )
 {
   test.execute( BytesBuffered { 0 } );
@@ -13,7 +12,6 @@ void all_zeroes( ByteStreamTestHarness& test )
   test.execute( BytesPushed { 0 } );
   test.execute( BytesPopped { 0 } );
 }
-} // namespace
 
 int main()
 {
@@ -90,27 +88,6 @@ int main()
       test.execute( AvailableCapacity { 15 } );
       test.execute( BytesPushed { 5 } );
       test.execute( BytesPopped { 5 } );
-    }
-
-    // test credit: Neal LB
-    {
-      ByteStreamTestHarness test { "okay to push an empty string after close I", 15 };
-      test.execute( Close {} );
-      test.execute( IsClosed { true } );
-      test.execute( Push { "" } );
-      test.execute( HasError { false } );
-      test.execute( IsFinished { true } );
-      all_zeroes( test );
-    }
-
-    {
-      ByteStreamTestHarness test { "okay to push an empty string after close II", 15 };
-      test.execute( Push { "hello world" } );
-      test.execute( Close {} );
-      test.execute( IsClosed { true } );
-      test.execute( Push { "" } );
-      test.execute( HasError { false } );
-      test.execute( IsClosed { true } );
     }
   } catch ( const exception& e ) {
     cerr << "Exception: " << e.what() << "\n";

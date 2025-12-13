@@ -55,7 +55,7 @@ public:
   TCPSenderTestHarness( std::string name, TCPConfig config )
     : TestHarness( move( name ),
                    "initial_RTO_ms=" + to_string( config.rt_timeout ) + " and ISN=" + to_string( config.isn ),
-                   { .sender = TCPSender { ByteStream { config.send_capacity }, config.isn, config.rt_timeout } } )
+                   { TCPSender { ByteStream { config.send_capacity }, config.isn, config.rt_timeout } } )
   {}
 
   template<std::derived_from<TestStep<TCPSender>> T>
@@ -254,7 +254,7 @@ struct Receive : public Action<SenderAndOutput>
 
 struct AckReceived : public Receive
 {
-  explicit AckReceived( Wrap32 ackno ) : Receive( { .ackno = ackno, .window_size = DEFAULT_TEST_WINDOW } ) {}
+  explicit AckReceived( Wrap32 ackno ) : Receive( { ackno, DEFAULT_TEST_WINDOW } ) {}
 };
 
 struct Close : public Push

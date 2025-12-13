@@ -12,7 +12,6 @@
 using namespace std;
 using namespace std::chrono;
 
-namespace {
 void speed_test( const size_t num_chunks,  // NOLINT(bugprone-easily-swappable-parameters)
                  const size_t chunk_size,  // NOLINT(bugprone-easily-swappable-parameters)
                  const size_t overlap,     // NOLINT(bugprone-easily-swappable-parameters)
@@ -98,7 +97,6 @@ void program_body()
   speed_test( 1000, 1500, 1500, 32768, 1370, "(no overlap):  " );
   speed_test( 1000, 1500, 150, 32768, 6163, "(10x overlap): " );
 }
-} // namespace
 
 int main()
 {

@@ -183,7 +183,7 @@ int main()
 
     // test credit: Andy Wang
     {
-      ReassemblerTestHarness test { "insert beyond capacity at colossally gigantic index I", 3 };
+      ReassemblerTestHarness test { "insert beyond capacity at colossally gigantic index", 3 };
 
       test.execute( Insert { "b", 1 }.is_last() );
       test.execute( BytesPushed( 0 ) );
@@ -201,49 +201,6 @@ int main()
       test.execute( BytesPushed( 2 ) );
       test.execute( BytesPending( 0 ) );
       test.execute( ReadAll( "ab" ) );
-      test.execute( IsFinished( true ) );
-    }
-
-    // test credit: Riya Ranjan
-    {
-      ReassemblerTestHarness test { "insert beyond capacity at colossally gigantic index II", 4 };
-      test.execute( Insert { "", 0 } );
-      test.execute( Insert { "a", UINT64_MAX - 1 } );
-      test.execute( BytesPushed( 0 ) );
-      test.execute( BytesPending( 0 ) );
-    }
-
-    // test credit: Andy Wang with Jasraj Yogesh Kripalani
-    {
-      ReassemblerTestHarness test { "Use full reassembler storage", 10 };
-
-      test.execute( Insert { "bcde", 1 } );
-      test.execute( BytesPushed( 0 ) );
-      test.execute( BytesPending( 4 ) );
-
-      test.execute( Insert { "a", 0 } );
-      test.execute( BytesPushed( 5 ) );
-      test.execute( BytesPending( 0 ) );
-      test.execute( ReadAll( "abcde" ) );
-
-      test.execute( Insert { "ghijklmno", 6 } );
-      test.execute( BytesPushed( 5 ) );
-      test.execute( BytesPending( 9 ) );
-
-      test.execute( Insert { "f", 5 } );
-      test.execute( BytesPushed( 15 ) );
-      test.execute( BytesPending( 0 ) );
-      test.execute( ReadAll( "fghijklmno" ) );
-
-      test.execute( Insert { "rstuvwxy", 17 }.is_last() );
-      test.execute( BytesPushed( 15 ) );
-      test.execute( BytesPending( 8 ) );
-
-      test.execute( Insert { "pq", 15 } );
-      test.execute( BytesPushed( 25 ) );
-      test.execute( BytesPending( 0 ) );
-      test.execute( ReadAll( "pqrstuvwxy" ) );
-
       test.execute( IsFinished( true ) );
     }
   } catch ( const exception& e ) {

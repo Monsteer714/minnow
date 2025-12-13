@@ -56,7 +56,7 @@ int main()
       cfg.isn = isn;
 
       TCPSenderTestHarness test { "SYN + FIN", cfg };
-      test.execute( Receive { { .ackno = {}, .window_size = 1024 } }.without_push() );
+      test.execute( Receive { { {}, 1024 } }.without_push() );
       test.execute( Close {} );
       test.execute( ExpectMessage {}.with_syn( true ).with_payload_size( 0 ).with_seqno( isn ).with_fin( true ) );
       test.execute( ExpectSeqno { isn + 2 } );

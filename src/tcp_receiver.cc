@@ -35,7 +35,7 @@ TCPReceiverMessage TCPReceiver::send() const
                          + syn_flag + writer().is_closed();
     receive.ackno = Wrap32::wrap(left_edge, zero_point);
   }
-  receive.window_size = min((uint64_t) UINT16_MAX,
+  receive.window_size = min(static_cast<uint64_t>(UINT16_MAX),
                                writer().available_capacity());
   return receive;
 }

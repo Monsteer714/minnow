@@ -23,7 +23,7 @@ int main()
       for ( size_t i = 0; i < NREPS; ++i ) {
         const size_t size = MIN_WRITE + ( rd() % ( MAX_WRITE - MIN_WRITE ) );
         string d( size, 0 );
-        ranges::generate( d, [&] { return 'a' + ( rd() % 26 ); } );
+        generate( d.begin(), d.end(), [&] { return 'a' + ( rd() % 26 ); } );
 
         test.execute( Push { d } );
         acc += size;

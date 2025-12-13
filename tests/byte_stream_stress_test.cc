@@ -5,7 +5,6 @@
 
 using namespace std;
 
-namespace {
 void stress_test( const size_t input_len,    // NOLINT(bugprone-easily-swappable-parameters)
                   const size_t capacity,     // NOLINT(bugprone-easily-swappable-parameters)
                   const size_t random_seed ) // NOLINT(bugprone-easily-swappable-parameters)
@@ -81,7 +80,6 @@ void program_body()
   stress_test( 1111, 17, 98765 );
   stress_test( 4097, 4096, 11101 );
 }
-} // namespace
 
 int main()
 {

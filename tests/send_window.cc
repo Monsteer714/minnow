@@ -48,7 +48,7 @@ int main()
       const size_t MAX_WIN = 100;
       const size_t N_REPS = 1000;
       for ( size_t i = 0; i < N_REPS; ++i ) {
-        const size_t len = MIN_WIN + ( rd() % ( MAX_WIN - MIN_WIN ) );
+        const size_t len = MIN_WIN + rd() % ( MAX_WIN - MIN_WIN );
         TCPConfig cfg;
         const Wrap32 isn( rd() );
         cfg.isn = isn;

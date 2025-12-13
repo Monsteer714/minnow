@@ -15,12 +15,11 @@ int main()
     // Unwrap the first byte after the first wrap
     test_should_be( Wrap32( 1 ).unwrap( Wrap32( 0 ), UINT32_MAX ), ( 1UL << 32 ) + 1 );
     // Unwrap the last byte before the third wrap
-    test_should_be( Wrap32( UINT32_MAX - 1 ).unwrap( Wrap32( 0 ), 3 * ( 1UL << 32 ) ), ( 3 * ( 1UL << 32 ) ) - 2 );
+    test_should_be( Wrap32( UINT32_MAX - 1 ).unwrap( Wrap32( 0 ), 3 * ( 1UL << 32 ) ), 3 * ( 1UL << 32 ) - 2 );
     // Unwrap the 10th from last byte before the third wrap
-    test_should_be( Wrap32( UINT32_MAX - 10 ).unwrap( Wrap32( 0 ), 3 * ( 1UL << 32 ) ),
-                    ( 3 * ( 1UL << 32 ) ) - 11 );
+    test_should_be( Wrap32( UINT32_MAX - 10 ).unwrap( Wrap32( 0 ), 3 * ( 1UL << 32 ) ), 3 * ( 1UL << 32 ) - 11 );
     // Non-zero ISN
-    test_should_be( Wrap32( UINT32_MAX ).unwrap( Wrap32( 10 ), 3 * ( 1UL << 32 ) ), ( 3 * ( 1UL << 32 ) ) - 11 );
+    test_should_be( Wrap32( UINT32_MAX ).unwrap( Wrap32( 10 ), 3 * ( 1UL << 32 ) ), 3 * ( 1UL << 32 ) - 11 );
     // Big unwrap
     test_should_be( Wrap32( UINT32_MAX ).unwrap( Wrap32( 0 ), 0 ), static_cast<uint64_t>( UINT32_MAX ) );
     // Unwrap a non-zero ISN

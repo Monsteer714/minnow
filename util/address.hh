@@ -24,8 +24,8 @@ public:
   };
 
 private:
-  socklen_t size_; //!< Size of the wrapped address.
-  Raw address_ {}; //!< A wrapped [sockaddr_storage](@ref man7::socket) containing the address.
+  socklen_t _size; //!< Size of the wrapped address.
+  Raw _address {}; //!< A wrapped [sockaddr_storage](@ref man7::socket) containing the address.
 
   //! Constructor from ip/host, service/port, and hints to the resolver.
   Address( const std::string& node, const std::string& service, const addrinfo& hints );
@@ -39,9 +39,6 @@ public:
 
   //! Construct from a [sockaddr *](@ref man7::socket).
   Address( const sockaddr* addr, std::size_t size );
-
-  //! Default constructor
-  Address() : Address( nullptr, 0 ) {}
 
   //! Equality comparison.
   bool operator==( const Address& other ) const;
@@ -68,9 +65,9 @@ public:
   //!@{
 
   //! Size of the underlying address storage.
-  socklen_t size() const { return size_; }
+  socklen_t size() const { return _size; }
   //! Const pointer to the underlying socket address storage.
-  const sockaddr* raw() const { return static_cast<const sockaddr*>( address_ ); }
+  const sockaddr* raw() const { return static_cast<const sockaddr*>( _address ); }
   //! Safely convert to underlying sockaddr type
   template<typename sockaddr_type>
   const sockaddr_type* as() const;

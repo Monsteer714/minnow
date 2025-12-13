@@ -34,7 +34,7 @@ int main()
       test.execute( ExpectSeqno { isn + 1 } );
       test.execute( ExpectSeqnosInFlight { 1 } );
       // Wait twice as long b/c exponential back-off
-      test.execute( Tick { ( 2 * retx_timeout ) - 1U } );
+      test.execute( Tick { 2 * retx_timeout - 1U } );
       test.execute( ExpectNoSegment {} );
       test.execute( Tick { 1 } );
       test.execute( ExpectMessage {}.with_no_flags().with_syn( true ).with_payload_size( 0 ).with_seqno( isn ) );

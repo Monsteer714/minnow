@@ -11,7 +11,6 @@
 using namespace std;
 using namespace std::chrono;
 
-namespace {
 double speed_test( fstream& debug_output,
                    const size_t input_len,   // NOLINT(bugprone-easily-swappable-parameters)
                    const size_t capacity,    // NOLINT(bugprone-easily-swappable-parameters)
@@ -98,7 +97,6 @@ void program_body()
   speed_test( debug_output, 1e7, 32768, 789, 1500, 128 );
   speed_test( debug_output, 1e7, 32768, 789, 1500, 32 );
 }
-} // namespace
 
 int main()
 {

@@ -41,7 +41,7 @@ void IPv4Header::parse( Parser& parser )
     return;
   }
 
-  parser.remove_prefix( ( static_cast<uint64_t>( hlen ) * 4 ) - IPv4Header::LENGTH );
+  parser.remove_prefix( static_cast<uint64_t>( hlen ) * 4 - IPv4Header::LENGTH );
 
   // Verify checksum
   const uint16_t given_cksum = cksum;
@@ -79,7 +79,7 @@ void IPv4Header::serialize( Serializer& serializer ) const
 
 uint16_t IPv4Header::payload_length() const
 {
-  return len - ( 4 * hlen );
+  return len - 4 * hlen;
 }
 
 //! \details This value is needed when computing the checksum of an encapsulated TCP segment.

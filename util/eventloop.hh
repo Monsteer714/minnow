@@ -75,7 +75,7 @@ public:
 
   public:
     template<class RuleType>
-    explicit RuleHandle( const std::shared_ptr<RuleType>& x ) : rule_weak_ptr_( x )
+    explicit RuleHandle( const std::shared_ptr<RuleType> x ) : rule_weak_ptr_( x )
     {}
 
     void cancel();

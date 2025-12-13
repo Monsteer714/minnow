@@ -1,6 +1,4 @@
 #include "helpers.hh"
-#include "arp_message.hh"
-#include "ipv4_datagram.hh"
 
 #include <iomanip>
 
@@ -31,32 +29,4 @@ string pretty_print( string_view str, size_t max_length )
     }
   }
   return ret;
-}
-
-string summary( const EthernetFrame& frame )
-{
-  string out = frame.header.to_string() + " payload: ";
-  switch ( frame.header.type ) {
-    case EthernetHeader::TYPE_IPv4: {
-      InternetDatagram dgram;
-      if ( parse( dgram, clone( frame ).payload ) ) {
-        out.append( dgram.header.to_string() + " payload=" );
-        out.append( "\"" + pretty_print( concat( dgram.payload ) ) + "\"" );
-      } else {
-        out.append( "bad IPv4 datagram" );
-      }
-    } break;
-    case EthernetHeader::TYPE_ARP: {
-      ARPMessage arp;
-      if ( parse( arp, clone( frame ).payload ) ) {
-        out.append( arp.to_string() );
-      } else {
-        out.append( "bad ARP message" );
-      }
-    } break;
-    default:
-      out.append( "unknown frame type" );
-      break;
-  }
-  return out;
 }

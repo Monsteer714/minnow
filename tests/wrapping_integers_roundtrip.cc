@@ -9,7 +9,6 @@
 
 using namespace std;
 
-namespace {
 void check_roundtrip( const Wrap32 isn, const uint64_t value, const uint64_t checkpoint )
 {
   if ( Wrap32::wrap( value, isn ).unwrap( isn, checkpoint ) != value ) {
@@ -22,7 +21,6 @@ void check_roundtrip( const Wrap32 isn, const uint64_t value, const uint64_t che
     throw runtime_error( ss.str() );
   }
 }
-} // namespace
 
 int main()
 {

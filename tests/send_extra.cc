@@ -109,7 +109,7 @@ int main()
       test.execute( Tick { 6 } );
       test.execute( ExpectMessage {}.with_payload_size( 3 ).with_data( "abc" ).with_seqno( isn + 1 ) );
       test.execute( ExpectNoSegment {} );
-      test.execute( Tick { ( rto * 2 ) - 5 } );
+      test.execute( Tick { rto * 2 - 5 } );
       test.execute( ExpectNoSegment {} );
       test.execute( Tick { 8 } );
       test.execute( ExpectMessage {}.with_payload_size( 3 ).with_data( "abc" ).with_seqno( isn + 1 ) );
@@ -140,12 +140,12 @@ int main()
       test.execute( Tick { 6 } );
       test.execute( ExpectMessage {}.with_payload_size( 3 ).with_data( "abc" ).with_seqno( isn + 1 ) );
       test.execute( ExpectNoSegment {} );
-      test.execute( Tick { ( rto * 2 ) - 5 } );
+      test.execute( Tick { rto * 2 - 5 } );
       test.execute( ExpectNoSegment {} );
       test.execute( Tick { 5 } );
       test.execute( ExpectMessage {}.with_payload_size( 3 ).with_data( "abc" ).with_seqno( isn + 1 ) );
       test.execute( ExpectNoSegment {} );
-      test.execute( Tick { ( rto * 4 ) - 5 } );
+      test.execute( Tick { rto * 4 - 5 } );
       test.execute( ExpectNoSegment {} );
       test.execute( AckReceived { Wrap32 { isn + 4 } }.with_win( 1000 ) );
       test.execute( Tick { rto - 1 } );
@@ -234,7 +234,7 @@ int main()
       test.execute( ExpectNoSegment {} );
       test.execute( Tick { 2 } );
       test.execute( ExpectMessage {}.with_payload_size( 0 ).with_seqno( isn + 4 ).with_fin( true ) );
-      test.execute( Tick { ( 2 * rto ) - 5 } );
+      test.execute( Tick { 2 * rto - 5 } );
       test.execute( ExpectNoSegment {} );
       test.execute( Tick { 10 } );
       test.execute( ExpectMessage {}.with_payload_size( 0 ).with_seqno( isn + 4 ).with_fin( true ) );
@@ -419,13 +419,13 @@ int main()
 
       test.execute( Close {} );
 
-      test.execute( Tick { ( 2 * rto ) - 1 } );
+      test.execute( Tick { 2 * rto - 1 } );
       test.execute( ExpectNoSegment {} );
       test.execute( Tick { 1 } );
       test.execute(
         ExpectMessage {}.with_payload_size( 1 ).with_data( "a" ).with_seqno( isn + 1 ).with_no_flags() );
 
-      test.execute( Tick { ( 4 * rto ) - 1 } );
+      test.execute( Tick { 4 * rto - 1 } );
       test.execute( ExpectNoSegment {} );
       test.execute( Tick { 1 } );
       test.execute(
@@ -638,7 +638,7 @@ int main()
       cfg.isn = isn;
 
       TCPSenderTestHarness test { "Receiving before transmit II", cfg };
-      test.execute( Receive { { .ackno = {}, .window_size = 1024 } }.without_push() );
+      test.execute( Receive { { {}, 1024 } }.without_push() );
       test.execute( Push( "01234567" ).with_close() );
       test.execute( ExpectMessage {}.with_data( "01234567" ).with_syn( true ).with_seqno( isn ).with_fin( true ) );
       test.execute( ExpectSeqno { isn + 10 } );
@@ -655,7 +655,7 @@ int main()
 
       TCPSenderTestHarness test { "Receiving before transmit III", cfg };
       //  Set window size without having sent an acknowledgment
-      test.execute( Receive { { .ackno = {}, .window_size = 1024 } }.without_push() );
+      test.execute( Receive { { {}, 1024 } }.without_push() );
       test.execute( ExpectNoSegment {} );
       test.execute( Close {} );
       test.execute( ExpectMessage {}.with_syn( true ).with_fin( true ).with_payload_size( 0 ).with_seqno( isn ) );

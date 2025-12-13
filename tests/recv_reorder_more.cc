@@ -16,8 +16,7 @@
 
 using namespace std;
 
-namespace {
-constexpr unsigned NREPS = 64;
+static constexpr unsigned NREPS = 64;
 
 void do_test_1( const TCPConfig& cfg, default_random_engine& rd )
 {
@@ -35,7 +34,7 @@ void do_test_1( const TCPConfig& cfg, default_random_engine& rd )
   shuffle( seq_size.begin(), seq_size.end(), rd );
 
   string d( datalen, 0 );
-  ranges::generate( d, [&] { return rd(); } );
+  generate( d.begin(), d.end(), [&] { return rd(); } );
 
   uint64_t min_expect_ackno = 1;
   uint64_t max_expect_ackno = 1;
@@ -69,7 +68,7 @@ void do_test_2( const TCPConfig& cfg, default_random_engine& rd )
     } else if ( rem == 1 ) {
       offs = min( static_cast<size_t>( 1 ), datalen );
     } else {
-      offs = min( { datalen, rem, 1 + ( static_cast<size_t>( rd() ) % ( rem - 1 ) ) } );
+      offs = min( min( datalen, rem ), 1 + ( static_cast<size_t>( rd() ) % ( rem - 1 ) ) );
     }
 
     if ( size + offs > TCPConfig::MAX_PAYLOAD_SIZE ) {
@@ -84,7 +83,7 @@ void do_test_2( const TCPConfig& cfg, default_random_engine& rd )
   shuffle( seq_size.begin(), seq_size.end(), rd );
 
   string d( datalen, 0 );
-  ranges::generate( d, [&] { return rd(); } );
+  generate( d.begin(), d.end(), [&] { return rd(); } );
 
   uint64_t min_expect_ackno = 1;
   uint64_t max_expect_ackno = 1;
@@ -100,7 +99,6 @@ void do_test_2( const TCPConfig& cfg, default_random_engine& rd )
   test_2.execute( BytesPending { 0 } );
   test_2.execute( ReadAll { d } );
 }
-} // namespace
 
 int main()
 {

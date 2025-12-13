@@ -95,7 +95,7 @@ private:
 
   void send( const TCPSenderMessage& sender_message, const TransmitFunction& transmit )
   {
-    transmit( { .sender = borrow( sender_message ), .receiver = receiver_.send() } );
+    transmit( { borrow( sender_message ), receiver_.send() } );
     need_send_ = false;
   }
 

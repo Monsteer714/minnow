@@ -1,8 +1,7 @@
 #pragma once
 
-#include "string_view_range.hh"
-
 #include <cstdint>
+#include <ranges>
 
 //! The internet checksum algorithm
 class InternetChecksum
@@ -13,7 +12,6 @@ private:
 
 public:
   explicit InternetChecksum( const uint32_t sum = 0 ) : sum_( sum ) {}
-
   void add( std::string_view data )
   {
     for ( const uint8_t i : data ) {
@@ -37,7 +35,7 @@ public:
     return ~ret;
   }
 
-  void add( StringViewRange auto&& data )
+  void add( std::ranges::range auto&& data )
   {
     for ( const auto& x : data ) {
       add( std::string_view { x } );

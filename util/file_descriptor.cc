@@ -11,42 +11,27 @@
 
 using namespace std;
 
-size_t FileDescriptor::FDWrapper::CheckFDSystemCall( string_view what, ssize_t return_value ) const
+template<typename T>
+T FileDescriptor::FDWrapper::CheckSystemCall( string_view s_attempt, T return_value ) const
 {
   if ( return_value >= 0 ) {
     return return_value;
   }
 
-  if ( non_blocking_ and ( errno == EAGAIN or errno == EWOULDBLOCK or errno == EINPROGRESS ) ) {
+  if ( non_blocking_ and ( errno == EAGAIN or errno == EINPROGRESS ) ) {
     return 0;
   }
 
-  throw unix_error { what };
+  throw unix_error { s_attempt };
 }
 
-size_t FileDescriptor::FDWrapper::CheckRead( string_view what, ssize_t return_value )
-{
-  if ( return_value == 0 ) {
-    eof_ = true;
-  }
-
-  return CheckFDSystemCall( what, return_value );
-}
-
-size_t FileDescriptor::CheckFDSystemCall( string_view what, ssize_t return_value ) const
+template<typename T>
+T FileDescriptor::CheckSystemCall( string_view s_attempt, T return_value ) const
 {
   if ( not internal_fd_ ) {
     throw runtime_error( "internal error: missing internal_fd_" );
   }
-  return internal_fd_->CheckFDSystemCall( what, return_value );
-}
-
-size_t FileDescriptor::CheckRead( string_view what, ssize_t return_value )
-{
-  if ( not internal_fd_ ) {
-    throw runtime_error( "internal error: missing internal_fd_" );
-  }
-  return internal_fd_->CheckRead( what, return_value );
+  return internal_fd_->CheckSystemCall( s_attempt, return_value );
 }
 
 // fd is the file descriptor number returned by [open(2)](\ref man2::open) or similar
@@ -92,44 +77,64 @@ FileDescriptor FileDescriptor::duplicate() const
   return FileDescriptor { internal_fd_ };
 }
 
-// Read into a single buffer of given length (which if empty will be resized to a reasonable value before reading).
-// Afer the read, the buffer will be resized to match whatever was read.
+// buffer is the string to be read into
 void FileDescriptor::read( string& buffer )
 {
   if ( buffer.empty() ) {
     buffer.resize( kReadBufferSize );
   }
 
-  const size_t bytes_read = CheckRead( "read", ::read( fd_num(), buffer.data(), buffer.size() ) );
+  const ssize_t bytes_read = ::read( fd_num(), buffer.data(), buffer.size() );
+  if ( bytes_read < 0 ) {
+    if ( internal_fd_->non_blocking_ and ( errno == EAGAIN or errno == EINPROGRESS ) ) {
+      buffer.clear();
+      return;
+    }
+    throw unix_error { "read" };
+  }
+
   register_read();
 
-  if ( bytes_read > buffer.size() ) {
+  if ( bytes_read == 0 ) {
+    internal_fd_->eof_ = true;
+  }
+
+  if ( bytes_read > static_cast<ssize_t>( buffer.size() ) ) {
     throw runtime_error( "read() read more than requested" );
   }
 
   buffer.resize( bytes_read );
 }
 
-// Read into a vector of buffers (if all empty, the last one will be resized to a reasonable value).
-// After the read, the buffers will be resized to match whatever was read.
 void FileDescriptor::read( vector<string>& buffers )
 {
   if ( buffers.empty() ) {
-    throw runtime_error( "FileDescriptor::read called with no buffers" );
+    return;
   }
 
-  if ( buffers.back().empty() ) {
-    buffers.back().resize( kReadBufferSize );
+  buffers.back().clear();
+  buffers.back().resize( kReadBufferSize );
+
+  vector<iovec> iovecs;
+  iovecs.reserve( buffers.size() );
+  size_t total_size = 0;
+  for ( const auto& x : buffers ) {
+    iovecs.push_back( { const_cast<char*>( x.data() ), x.size() } ); // NOLINT(*-const-cast)
+    total_size += x.size();
   }
 
-  static thread_local vector<iovec> iovecs;
-  const size_t total_size = to_iovecs( buffers, iovecs );
+  const ssize_t bytes_read = ::readv( fd_num(), iovecs.data(), static_cast<int>( iovecs.size() ) );
+  if ( bytes_read < 0 ) {
+    if ( internal_fd_->non_blocking_ and ( errno == EAGAIN or errno == EINPROGRESS ) ) {
+      buffers.clear();
+      return;
+    }
+    throw unix_error { "read" };
+  }
 
-  const size_t bytes_read
-    = CheckRead( "readv", readv( fd_num(), iovecs.data(), static_cast<int>( iovecs.size() ) ) );
   register_read();
 
-  if ( bytes_read > total_size ) {
+  if ( bytes_read > static_cast<ssize_t>( total_size ) ) {
     throw runtime_error( "read() read more than requested" );
   }
 
@@ -144,46 +149,41 @@ void FileDescriptor::read( vector<string>& buffers )
   }
 }
 
-void FileDescriptor::write_all( string_view buffer )
-{
-  if ( not blocking() ) {
-    throw runtime_error( "write_all requires a blocking file descriptor" );
-    // otherwise, this could call write on a non-blocking fd that isn't "ready" for writing
-  }
-
-  while ( not buffer.empty() ) {
-    buffer.remove_prefix( write( buffer ) );
-  }
-}
-
 size_t FileDescriptor::write( string_view buffer )
 {
-  const size_t bytes_written = CheckFDSystemCall( "write", ::write( fd_num(), buffer.data(), buffer.size() ) );
-  register_write();
-
-  if ( bytes_written == 0 and not buffer.empty() ) {
-    throw runtime_error( "write returned 0 given non-empty input buffer" );
-  }
-
-  if ( bytes_written > buffer.size() ) {
-    throw runtime_error( "write wrote more than length of input buffer" );
-  }
-
-  return bytes_written;
+  return write( vector<string_view> { buffer } );
 }
 
-size_t FileDescriptor::write( const std::vector<iovec>& iovecs, size_t total_size )
+size_t FileDescriptor::write( const vector<Ref<string>>& buffers )
 {
-  const size_t bytes_written
-    = CheckFDSystemCall( "writev", ::writev( fd_num(), iovecs.data(), static_cast<int>( iovecs.size() ) ) );
+  vector<string_view> views;
+  views.reserve( buffers.size() );
+  for ( const auto& x : buffers ) {
+    views.emplace_back( x.get() );
+  }
+  return write( views );
+}
+
+size_t FileDescriptor::write( const vector<string_view>& buffers )
+{
+  vector<iovec> iovecs;
+  iovecs.reserve( buffers.size() );
+  size_t total_size = 0;
+  for ( const auto x : buffers ) {
+    iovecs.push_back( { const_cast<char*>( x.data() ), x.size() } ); // NOLINT(*-const-cast)
+    total_size += x.size();
+  }
+
+  const ssize_t bytes_written
+    = CheckSystemCall( "writev", ::writev( fd_num(), iovecs.data(), static_cast<int>( iovecs.size() ) ) );
   register_write();
 
   if ( bytes_written == 0 and total_size != 0 ) {
-    throw runtime_error( "writev returned 0 given non-empty input buffer" );
+    throw runtime_error( "write returned 0 given non-empty input buffer" );
   }
 
-  if ( bytes_written > total_size ) {
-    throw runtime_error( "writev wrote more than length of input buffer" );
+  if ( bytes_written > static_cast<ssize_t>( total_size ) ) {
+    throw runtime_error( "write wrote more than length of input buffer" );
   }
 
   return bytes_written;
