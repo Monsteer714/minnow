@@ -7,13 +7,11 @@
 
 using namespace std;
 
-namespace {
 void show_usage( const char* argv0 )
 {
   cerr << "Usage: " << argv0 << " [-l] <host> <port>\n\n"
        << "  -l specifies listen mode; <host>:<port> is the listening address.\n";
 }
-} // namespace
 
 int main( int argc, char** argv )
 {

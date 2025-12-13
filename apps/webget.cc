@@ -1,4 +1,3 @@
-#include "debug.hh"
 #include "socket.hh"
 
 #include <cstdlib>
@@ -8,7 +7,6 @@
 
 using namespace std;
 
-namespace {
 void get_URL( const string& host, const string& path )
 {
   TCPSocket clientSocket;
@@ -29,7 +27,9 @@ void get_URL( const string& host, const string& path )
   }
 
   clientSocket.close();
-} // namespace
+
+  // cerr << "Function called: get_URL(" << host << ", " << path << ")\n";
+  // cerr << "Warning: get_URL() has not been implemented yet.\n";
 }
 
 int main( int argc, char* argv[] )

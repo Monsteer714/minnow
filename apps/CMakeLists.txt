@@ -22,4 +22,9 @@ endmacro(add_app)
 
 add_app(webget)
 add_app(tcp_native)
+<<<<<<< Updated upstream
 add_app(ip_raw)
+=======
+add_app(tcp_ipv4)
+add_app(ip_raw)
+>>>>>>> Stashed changes
