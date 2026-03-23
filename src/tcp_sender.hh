@@ -80,12 +80,13 @@ private:
     Wrap32 isn_;
     bool syn_flag_ = {};
     bool fin_flag_ = {};
+    bool syn_sent_ = {false};
     uint64_t initial_RTO_ms_ = {};
     uint64_t left_window_edge_ = {};
     uint64_t right_window_edge_ = {};
     uint64_t last_ackno_ = {0};
     uint64_t next_seqno_ = {0};
-    uint64_t window_size_ = {};
+    uint64_t window_size_ = {0};
     uint64_t consecutive_retransmissions_ = {0};
     RetransmissonTimer timer_;
 

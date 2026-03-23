@@ -16,14 +16,17 @@ uint64_t TCPSender::consecutive_retransmissions() const {
 
 void TCPSender::push(const TransmitFunction &transmit) {
     TCPSenderMessage msg = make_empty_message();
-    if (next_seqno_ == 0) {
+    if (!syn_sent_) {
         syn_flag_ = true;
+        syn_sent_ = true;
+        msg.SYN = true;
+    } else if (syn_sent_ == true) {
+        return;
     }
     if (reader().is_finished()) {
         fin_flag_ = true;
+        msg.FIN = true;
     }
-    msg.SYN = syn_flag_;
-    msg.FIN = fin_flag_;
     std::string payload = static_cast<std::string>(reader().peek().substr(0, window_size_));
     msg.payload = payload;
     reader().pop(payload.size());
@@ -45,7 +48,8 @@ TCPSenderMessage TCPSender::make_empty_message() const {
 }
 
 void TCPSender::receive(const TCPReceiverMessage &msg) {
-    last_ackno_ = msg.ackno->unwrap(isn_, next_seqno_);
+    next_seqno_ = reader().bytes_popped() + syn_flag_ + fin_flag_;
+    last_ackno_ = msg.ackno->unwrap(isn_, next_seqno_) + syn_flag_ + fin_flag_;
     right_window_edge_ = last_ackno_ + static_cast<uint64_t>(msg.window_size);
     left_window_edge_ = next_seqno_;
     window_size_ = right_window_edge_ - left_window_edge_ + 1;
