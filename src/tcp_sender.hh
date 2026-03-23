@@ -5,26 +5,30 @@
 #include "tcp_sender_message.hh"
 
 #include <functional>
+#include <map>
 
 class RetransmissonTimer {
 private:
     uint64_t initial_RTO_ms_;
     uint64_t current_RTO_ms_;
     uint64_t time_elapsed_;
+    bool running_ = false;
 
 public:
-    RetransmissonTimer(uint64_t initial_RTO_ms_)
-        : initial_RTO_ms_(initial_RTO_ms_), current_RTO_ms_(initial_RTO_ms_),
-          time_elapsed_(static_cast<uint64_t>(0)) {
-    }
-
-    void start() {
-        time_elapsed_ = 0;
+    RetransmissonTimer(uint64_t initial_RTO_ms)
+        : initial_RTO_ms_(initial_RTO_ms), current_RTO_ms_(initial_RTO_ms),
+          time_elapsed_(static_cast<uint64_t>(0)), running_(false){
     }
 
     void reset() {
         time_elapsed_ = 0;
+        running_ = true;
+    }
+
+    void initialize() {
+        time_elapsed_ = 0;
         current_RTO_ms_ = initial_RTO_ms_;
+        running_ = false;
     }
 
     void double_RTO() {
@@ -35,7 +39,7 @@ public:
         time_elapsed_ += ms_passed;
     }
 
-    bool alarm() {
+    bool expired() {
         return time_elapsed_ >= current_RTO_ms_;
     }
 };
@@ -74,6 +78,16 @@ private:
 
     ByteStream input_;
     Wrap32 isn_;
-    uint64_t initial_RTO_ms_;
+    bool syn_flag_ = {};
+    bool fin_flag_ = {};
+    uint64_t initial_RTO_ms_ = {};
+    uint64_t left_window_edge_ = {};
+    uint64_t right_window_edge_ = {};
+    uint64_t last_ackno_ = {0};
+    uint64_t next_seqno_ = {0};
+    uint64_t window_size_ = {};
+    uint64_t consecutive_retransmissions_ = {0};
     RetransmissonTimer timer_;
+
+    std::map<uint64_t, std::string> outstanding_segments_ = {};//<seqno, payload>
 };

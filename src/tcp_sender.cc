@@ -5,39 +5,64 @@
 using namespace std;
 
 // This function is for testing only; don't add extra state to support it.
-uint64_t TCPSender::sequence_numbers_in_flight() const
-{
-  debug( "unimplemented sequence_numbers_in_flight() called" );
-  return {};
+uint64_t TCPSender::sequence_numbers_in_flight() const {
+    return next_seqno_ + syn_flag_ + fin_flag_ - last_ackno_;
 }
 
 // This function is for testing only; don't add extra state to support it.
-uint64_t TCPSender::consecutive_retransmissions() const
-{
-  debug( "unimplemented consecutive_retransmissions() called" );
-  return {};
+uint64_t TCPSender::consecutive_retransmissions() const {
+    return consecutive_retransmissions_;
 }
 
-void TCPSender::push( const TransmitFunction& transmit )
-{
-  debug( "unimplemented push() called" );
-  (void)transmit;
+void TCPSender::push(const TransmitFunction &transmit) {
+    TCPSenderMessage msg = make_empty_message();
+    if (next_seqno_ == 0) {
+        syn_flag_ = true;
+    }
+    if (reader().is_finished()) {
+        fin_flag_ = true;
+    }
+    msg.SYN = syn_flag_;
+    msg.FIN = fin_flag_;
+    std::string payload = static_cast<std::string>(reader().peek().substr(0, window_size_));
+    msg.payload = payload;
+    reader().pop(payload.size());
+    transmit(msg);//keep sending?
+
+    outstanding_segments_.emplace(next_seqno_, payload);
+
+    next_seqno_ += payload.size();
 }
 
-TCPSenderMessage TCPSender::make_empty_message() const
-{
-  debug( "unimplemented make_empty_message() called" );
-  return {};
+TCPSenderMessage TCPSender::make_empty_message() const {
+    TCPSenderMessage msg;
+    msg.seqno = Wrap32::wrap(next_seqno_ + syn_flag_ + fin_flag_, isn_); // No seq is consumed,so left edge of sender's window?
+    msg.SYN = false; // Need to SYN if?
+    msg.FIN = false; // Need to FIN if?
+    msg.RST = false;
+    msg.payload = "";
+    return msg;
 }
 
-void TCPSender::receive( const TCPReceiverMessage& msg )
-{
-  uint64_t window_left_edge = msg.ackno->unwrap(this->isn_, )
+void TCPSender::receive(const TCPReceiverMessage &msg) {
+    last_ackno_ = msg.ackno->unwrap(isn_, next_seqno_);
+    right_window_edge_ = last_ackno_ + static_cast<uint64_t>(msg.window_size);
+    left_window_edge_ = next_seqno_;
+    window_size_ = right_window_edge_ - left_window_edge_ + 1;
 
+    for (auto [seqno, segment] : outstanding_segments_) {
+        if (last_ackno_ >= seqno + segment.size()) {
+            outstanding_segments_.erase(seqno);
+        }
+    }
 }
 
-void TCPSender::tick( uint64_t ms_since_last_tick, const TransmitFunction& transmit )
-{
-  debug( "unimplemented tick({}, ...) called", ms_since_last_tick );
-  (void)transmit;
+void TCPSender::tick(uint64_t ms_since_last_tick, const TransmitFunction &transmit) {
+    timer_.time(ms_since_last_tick);
+    if (timer_.expired() == true) {
+        TCPSenderMessage msg = make_empty_message();
+        msg.seqno = Wrap32(outstanding_segments_.begin()->first);
+        msg.payload = outstanding_segments_.begin()->second;
+        transmit(msg);
+    }
 }

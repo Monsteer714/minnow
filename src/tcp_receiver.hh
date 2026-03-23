@@ -28,5 +28,5 @@ public:
 private:
     Reassembler reassembler_;
     bool syn_flag = false;
-    Wrap32 zero_point{0};
+    Wrap32 isn_{0};
 };
