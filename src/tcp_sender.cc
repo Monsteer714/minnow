@@ -20,14 +20,15 @@ void TCPSender::push(const TransmitFunction &transmit) {
         syn_flag_ = true;
         syn_sent_ = true;
         msg.SYN = true;
-    } else if (syn_sent_ == true) {
-        return;
     }
     if (reader().is_finished()) {
         fin_flag_ = true;
         msg.FIN = true;
     }
     std::string payload = static_cast<std::string>(reader().peek().substr(0, window_size_));
+    if (payload.size() == 0 && !msg.SYN && !msg.FIN) {
+        return;
+    }
     msg.payload = payload;
     reader().pop(payload.size());
     transmit(msg);//keep sending?
@@ -48,8 +49,7 @@ TCPSenderMessage TCPSender::make_empty_message() const {
 }
 
 void TCPSender::receive(const TCPReceiverMessage &msg) {
-    next_seqno_ = reader().bytes_popped() + syn_flag_ + fin_flag_;
-    last_ackno_ = msg.ackno->unwrap(isn_, next_seqno_) + syn_flag_ + fin_flag_;
+    last_ackno_ = msg.ackno->unwrap(isn_, next_seqno_);
     right_window_edge_ = last_ackno_ + static_cast<uint64_t>(msg.window_size);
     left_window_edge_ = next_seqno_;
     window_size_ = right_window_edge_ - left_window_edge_ + 1;
