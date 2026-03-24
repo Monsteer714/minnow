@@ -81,6 +81,7 @@ private:
     bool syn_flag_ = {};
     bool fin_flag_ = {};
     bool syn_sent_ = {false};
+    bool fin_sent_ = {false};
     uint64_t initial_RTO_ms_ = {};
     uint64_t left_window_edge_ = {};
     uint64_t right_window_edge_ = {};

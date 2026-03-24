@@ -22,22 +22,24 @@ void TCPSender::push(const TransmitFunction &transmit) {
         syn_sent_ = true;
         msg.SYN = true;
     }
-    if (writer().is_closed()) {
+    if (writer().is_closed() && !fin_sent_) {
         fin_flag_ = true;
         msg.FIN = true;
     }
     std::string payload = static_cast<std::string>(reader().peek().substr(0, window_size_));
     //if FIN was not included in the window?
-    if (payload.size() == 0 && !msg.SYN && !msg.FIN) {
+    if (msg.SYN && msg.FIN) { // SYN + FIN in send_close.cc
+    } else if (payload.size() == 0 && !msg.SYN && !msg.FIN) {
         return;
-    }
-    if (msg.FIN && msg.payload.size() + msg.FIN > window_size_) {
+    } else if (msg.FIN && msg.payload.size() + msg.FIN > window_size_) {
         return;
     }
     msg.payload = payload;
     reader().pop(payload.size());
-    transmit(msg);//keep sending?
-
+    transmit(msg); //keep sending?
+    if (msg.FIN) {
+        fin_sent_ = true;
+    }
     outstanding_segments_.emplace(next_seqno_, payload);
 
     next_seqno_ += payload.size();
@@ -46,7 +48,8 @@ void TCPSender::push(const TransmitFunction &transmit) {
 
 TCPSenderMessage TCPSender::make_empty_message() const {
     TCPSenderMessage msg;
-    msg.seqno = Wrap32::wrap(next_seqno_ + syn_flag_ + fin_flag_, isn_); // No seq is consumed,so left edge of sender's window?
+    msg.seqno = Wrap32::wrap(next_seqno_ + syn_flag_ + fin_flag_, isn_);
+    // No seq is consumed,so left edge of sender's window?
     msg.SYN = false; // Need to SYN if?
     msg.FIN = false; // Need to FIN if?
     msg.RST = false;
@@ -55,7 +58,7 @@ TCPSenderMessage TCPSender::make_empty_message() const {
 }
 
 void TCPSender::receive(const TCPReceiverMessage &msg) {
-    if (msg.ackno->unwrap(isn_, next_seqno_) > next_seqno_ + syn_flag_) {
+    if (msg.ackno->unwrap(isn_, next_seqno_) > next_seqno_ + syn_flag_ + fin_flag_) {
         return;
     }
     last_ackno_ = msg.ackno->unwrap(isn_, next_seqno_);
@@ -63,7 +66,7 @@ void TCPSender::receive(const TCPReceiverMessage &msg) {
     left_window_edge_ = next_seqno_ + syn_flag_;
     window_size_ = right_window_edge_ - left_window_edge_ + 1;
 
-    for (auto [seqno, segment] : outstanding_segments_) {
+    for (auto [seqno, segment]: outstanding_segments_) {
         if (last_ackno_ >= seqno + segment.size()) {
             outstanding_segments_.erase(seqno);
         }
