@@ -15,18 +15,23 @@ uint64_t TCPSender::consecutive_retransmissions() const {
 }
 
 void TCPSender::push(const TransmitFunction &transmit) {
+    //while (reader.peek.size >= 0 && window_size > 0)
     TCPSenderMessage msg = make_empty_message();
     if (!syn_sent_) {
         syn_flag_ = true;
         syn_sent_ = true;
         msg.SYN = true;
     }
-    if (reader().is_finished()) {
+    if (writer().is_closed()) {
         fin_flag_ = true;
         msg.FIN = true;
     }
     std::string payload = static_cast<std::string>(reader().peek().substr(0, window_size_));
+    //if FIN was not included in the window?
     if (payload.size() == 0 && !msg.SYN && !msg.FIN) {
+        return;
+    }
+    if (msg.FIN && msg.payload.size() + msg.FIN > window_size_) {
         return;
     }
     msg.payload = payload;
@@ -52,7 +57,7 @@ TCPSenderMessage TCPSender::make_empty_message() const {
 void TCPSender::receive(const TCPReceiverMessage &msg) {
     last_ackno_ = msg.ackno->unwrap(isn_, next_seqno_);
     right_window_edge_ = last_ackno_ + static_cast<uint64_t>(msg.window_size) - 1;
-    left_window_edge_ = next_seqno_ + syn_flag_ + fin_flag_;
+    left_window_edge_ = next_seqno_ + syn_flag_;
     window_size_ = right_window_edge_ - left_window_edge_ + 1;
 
     for (auto [seqno, segment] : outstanding_segments_) {
