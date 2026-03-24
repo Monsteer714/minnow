@@ -55,6 +55,9 @@ TCPSenderMessage TCPSender::make_empty_message() const {
 }
 
 void TCPSender::receive(const TCPReceiverMessage &msg) {
+    if (msg.ackno->unwrap(isn_, next_seqno_) > next_seqno_ + syn_flag_) {
+        return;
+    }
     last_ackno_ = msg.ackno->unwrap(isn_, next_seqno_);
     right_window_edge_ = last_ackno_ + static_cast<uint64_t>(msg.window_size) - 1;
     left_window_edge_ = next_seqno_ + syn_flag_;
