@@ -36,6 +36,7 @@ void TCPSender::push(const TransmitFunction &transmit) {
     outstanding_segments_.emplace(next_seqno_, payload);
 
     next_seqno_ += payload.size();
+    window_size_ -= payload.size();
 }
 
 TCPSenderMessage TCPSender::make_empty_message() const {
@@ -50,8 +51,8 @@ TCPSenderMessage TCPSender::make_empty_message() const {
 
 void TCPSender::receive(const TCPReceiverMessage &msg) {
     last_ackno_ = msg.ackno->unwrap(isn_, next_seqno_);
-    right_window_edge_ = last_ackno_ + static_cast<uint64_t>(msg.window_size);
-    left_window_edge_ = next_seqno_;
+    right_window_edge_ = last_ackno_ + static_cast<uint64_t>(msg.window_size) - 1;
+    left_window_edge_ = next_seqno_ + syn_flag_ + fin_flag_;
     window_size_ = right_window_edge_ - left_window_edge_ + 1;
 
     for (auto [seqno, segment] : outstanding_segments_) {
