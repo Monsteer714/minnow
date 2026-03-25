@@ -91,5 +91,5 @@ private:
     uint64_t consecutive_retransmissions_ = {0};
     RetransmissonTimer timer_;
 
-    std::map<uint64_t, std::string> outstanding_segments_ = {};//<seqno, payload>
+    std::map<uint64_t, TCPSenderMessage> outstanding_segments_ = {};//<seqno, payload>
 };

@@ -26,7 +26,7 @@ void TCPSender::push(const TransmitFunction &transmit) {
         fin_flag_ = true;
         msg.FIN = true;
     }
-    std::string payload = static_cast<std::string>(reader().peek().substr(0, window_size_));
+    const std::string payload = static_cast<std::string>(reader().peek().substr(0, window_size_));
     //if FIN was not included in the window?
     if (msg.SYN && msg.FIN) { // SYN + FIN in send_close.cc
     } else if (payload.size() == 0 && !msg.SYN && !msg.FIN) {
@@ -40,7 +40,7 @@ void TCPSender::push(const TransmitFunction &transmit) {
     if (msg.FIN) {
         fin_sent_ = true;
     }
-    outstanding_segments_.emplace(next_seqno_, payload);
+    outstanding_segments_.emplace(next_seqno_ + syn_flag_ + fin_flag_, msg);
 
     next_seqno_ += payload.size();
     window_size_ -= payload.size();
@@ -58,16 +58,17 @@ TCPSenderMessage TCPSender::make_empty_message() const {
 }
 
 void TCPSender::receive(const TCPReceiverMessage &msg) {
-    if (msg.ackno->unwrap(isn_, next_seqno_) > next_seqno_ + syn_flag_ + fin_flag_) {
+    const uint64_t receive_ackno_ = msg.ackno->unwrap(isn_, next_seqno_);
+    if (receive_ackno_ > next_seqno_ + syn_flag_ + fin_flag_) {
         return;
     }
-    last_ackno_ = msg.ackno->unwrap(isn_, next_seqno_);
+    last_ackno_ = receive_ackno_;
     right_window_edge_ = last_ackno_ + static_cast<uint64_t>(msg.window_size) - 1;
     left_window_edge_ = next_seqno_ + syn_flag_;
     window_size_ = right_window_edge_ - left_window_edge_ + 1;
 
-    for (auto [seqno, segment]: outstanding_segments_) {
-        if (last_ackno_ >= seqno + segment.size()) {
+    for (auto [seqno, message]: outstanding_segments_) {
+        if (last_ackno_ > seqno + message.payload.size() - 1) {
             outstanding_segments_.erase(seqno);
         }
     }
@@ -76,9 +77,8 @@ void TCPSender::receive(const TCPReceiverMessage &msg) {
 void TCPSender::tick(uint64_t ms_since_last_tick, const TransmitFunction &transmit) {
     timer_.time(ms_since_last_tick);
     if (timer_.expired() == true) {
-        TCPSenderMessage msg = make_empty_message();
-        msg.seqno = Wrap32(outstanding_segments_.begin()->first);
-        msg.payload = outstanding_segments_.begin()->second;
+        TCPSenderMessage msg = outstanding_segments_.begin()->second;
+        timer_.double_RTO();
         transmit(msg);
     }
 }
