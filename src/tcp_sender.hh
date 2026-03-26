@@ -12,23 +12,19 @@ private:
     uint64_t initial_RTO_ms_;
     uint64_t current_RTO_ms_;
     uint64_t time_elapsed_;
-    bool running_ = false;
 
 public:
     RetransmissonTimer(uint64_t initial_RTO_ms)
         : initial_RTO_ms_(initial_RTO_ms), current_RTO_ms_(initial_RTO_ms),
-          time_elapsed_(static_cast<uint64_t>(0)), running_(false){
+          time_elapsed_(static_cast<uint64_t>(0)){
     }
 
     void reset() {
         time_elapsed_ = 0;
-        running_ = true;
     }
 
     void initialize() {
-        time_elapsed_ = 0;
         current_RTO_ms_ = initial_RTO_ms_;
-        running_ = false;
     }
 
     void double_RTO() {
@@ -39,7 +35,7 @@ public:
         time_elapsed_ += ms_passed;
     }
 
-    bool expired() {
+    bool expired() const {
         return time_elapsed_ >= current_RTO_ms_;
     }
 };
@@ -91,5 +87,5 @@ private:
     uint64_t consecutive_retransmissions_ = {0};
     RetransmissonTimer timer_;
 
-    std::map<uint64_t, TCPSenderMessage> outstanding_segments_ = {};//<seqno, payload>
+    std::map<uint64_t, TCPSenderMessage> outstanding_segments_ = {};//<seqno, message>
 };
