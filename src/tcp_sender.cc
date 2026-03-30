@@ -29,7 +29,8 @@ void TCPSender::push(const TransmitFunction &transmit) {
         fin_flag_ = true;
         msg.FIN = true;
     }
-    const std::string payload = static_cast<std::string>(reader().peek().substr(0, window_size_));
+    const std::string payload = static_cast<std::string>(reader().peek().substr(0,
+        min(window_size_, static_cast<uint64_t>(TCPConfig::MAX_PAYLOAD_SIZE))));
     //if FIN was not included in the window?
     if (msg.SYN && msg.FIN) { // SYN + FIN in send_close.cc
     } else if (payload.size() == 0 && !msg.SYN && !msg.FIN) {
@@ -65,26 +66,37 @@ void TCPSender::receive(const TCPReceiverMessage &msg) {
         return;
     }
 
+    if (receive_ackno_ > last_ackno_) {
+        timer_.initialize();
+        consecutive_retransmissions_ = 0;
+        if (!outstanding_segments_.empty()) {
+            timer_.reset();
+        }
+    }
+
     last_ackno_ = receive_ackno_;
     right_window_edge_ = last_ackno_ + static_cast<uint64_t>(msg.window_size) - 1;
     left_window_edge_ = next_seqno_ + syn_flag_;
     window_size_ = right_window_edge_ - left_window_edge_ + 1;
 
-    for (auto [seqno, message]: outstanding_segments_) {
+    while (!outstanding_segments_.empty()) {
+        auto segment = outstanding_segments_.begin();
+        auto seqno = segment->first;
+        auto message = segment->second;
         if (last_ackno_ > seqno + message.payload.size() - 1) {
             outstanding_segments_.erase(seqno);
-            if (!outstanding_segments_.empty()) {
-                timer_.reset();
-            }
-            consecutive_retransmissions_ = 0;
+        } else {
             break;
         }
     }
 }
 
 void TCPSender::tick(uint64_t ms_since_last_tick, const TransmitFunction &transmit) {
+    if (outstanding_segments_.empty()) {
+        return;
+    }
     timer_.time(ms_since_last_tick);
-    if (timer_.expired() == true) {
+    if (timer_.expired() == true && !outstanding_segments_.empty()) {
         TCPSenderMessage msg = outstanding_segments_.begin()->second;
         timer_.double_RTO();
         timer_.reset();
