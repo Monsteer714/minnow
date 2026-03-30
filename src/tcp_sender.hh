@@ -83,7 +83,7 @@ private:
     uint64_t right_window_edge_ = {};
     uint64_t last_ackno_ = {0};
     uint64_t next_seqno_ = {0};
-    uint64_t window_size_ = {0};
+    uint64_t window_size_ = {1};
     uint64_t consecutive_retransmissions_ = {0};
     RetransmissonTimer timer_;
 

@@ -18,36 +18,41 @@ uint64_t TCPSender::consecutive_retransmissions() const {
 }
 
 void TCPSender::push(const TransmitFunction &transmit) {
-    //while (reader.peek.size >= 0 && window_size > 0)
-    TCPSenderMessage msg = make_empty_message();
-    if (!syn_sent_) {
-        syn_flag_ = true;
-        syn_sent_ = true;
-        msg.SYN = true;
-    }
-    if (writer().is_closed() && !fin_sent_) {
-        fin_flag_ = true;
-        msg.FIN = true;
-    }
-    const std::string payload = static_cast<std::string>(reader().peek().substr(0,
-        min(window_size_, static_cast<uint64_t>(TCPConfig::MAX_PAYLOAD_SIZE))));
-    //if FIN was not included in the window?
-    if (msg.SYN && msg.FIN) { // SYN + FIN in send_close.cc
-    } else if (payload.size() == 0 && !msg.SYN && !msg.FIN) {
-        return;
-    } else if (msg.FIN && msg.payload.size() + msg.FIN > window_size_) {
-        return;
-    }
-    msg.payload = payload;
-    reader().pop(payload.size());
-    transmit(msg); //keep sending?
-    if (msg.FIN) {
-        fin_sent_ = true;
-    }
-    outstanding_segments_.emplace(next_seqno_ + syn_flag_ + fin_flag_, msg);
+    while (!fin_sent_ && window_size_ > 0) {
+        TCPSenderMessage msg = make_empty_message();
+        if (!syn_sent_) {
+            syn_flag_ = true;
+            syn_sent_ = true;
+            msg.SYN = true;
+        }
+        if (writer().is_closed() && !fin_sent_) {
+            fin_flag_ = true;
+            msg.FIN = true;
+        }
+        const std::string payload = static_cast<std::string>(reader().peek().substr(0,
+            min(window_size_, static_cast<uint64_t>(TCPConfig::MAX_PAYLOAD_SIZE))));
+        //if FIN was not included in the window?
+        if (msg.SYN && msg.FIN) { // SYN + FIN in send_close.cc
+        } else if (payload.size() == 0 && !msg.SYN && !msg.FIN) {
+            return;
+        } else if (msg.FIN && msg.payload.size() + msg.FIN > window_size_) {
+            return;
+        }
+        if (payload.size() + msg.FIN > window_size_) {
+            msg.FIN = false;
+        }
+        msg.payload = payload;
+        reader().pop(payload.size());
+        transmit(msg); //keep sending?
+        if (msg.FIN) {
+            fin_sent_ = true;
+        }
+        outstanding_segments_.emplace(next_seqno_ + syn_flag_ + fin_flag_, msg);
 
-    next_seqno_ += payload.size();
-    window_size_ -= payload.size();
+        next_seqno_ += payload.size();
+        window_size_ -= payload.size();
+    }
+
 }
 
 TCPSenderMessage TCPSender::make_empty_message() const {
